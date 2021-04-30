@@ -130,8 +130,7 @@ void main() {
           final Iterable<RotationTransition> rotationTransitions = tester.widgetList(
             find.byType(RotationTransition),
           );
-          final Iterable<double> currentRotations = rotationTransitions.map(
-              (RotationTransition t) => t.turns.value);
+          final Iterable<double> currentRotations = rotationTransitions.map((RotationTransition t) => t.turns.value);
 
           if (previousRotations != null && previousRotations!.isNotEmpty
               && currentRotations != null && currentRotations.isNotEmpty
@@ -148,11 +147,13 @@ void main() {
             }
 
             if (deltas.where((double delta) => delta < maxDeltaRotation).isEmpty) {
-              fail("The Floating Action Button's rotation should not change "
-                  'faster than $maxDeltaRotation per animation step.\n'
-                  'Detected deltas were: $deltas\n'
-                  'Previous values: $previousRotations, current values: $currentRotations\n'
-                  'Previous rect: $previousRect, current rect: $currentRect',);
+              fail(
+                "The Floating Action Button's rotation should not change "
+                'faster than $maxDeltaRotation per animation step.\n'
+                'Detected deltas were: $deltas\n'
+                'Previous values: $previousRotations, current values: $currentRotations\n'
+                'Previous rect: $previousRect, current rect: $currentRect',
+              );
             }
           }
           previousRotations = currentRotations;
@@ -655,10 +656,10 @@ void main() {
                   mini: mini,
                   key: key,
                 );
-              }
+              },
             ),
-          )
-        )
+          ),
+        ),
       );
     }
 
@@ -773,7 +774,7 @@ void main() {
         const MediaQueryData(
           padding: EdgeInsets.only(bottom: viewPadding),
           viewPadding: EdgeInsets.only(bottom: viewPadding),
-          viewInsets: EdgeInsets.only(bottom: keyboardHeight)
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
         ),
         floatingActionButton,
         bottomNavigationBar: true,
@@ -832,7 +833,7 @@ void main() {
         const MediaQueryData(
           padding: EdgeInsets.only(bottom: viewPadding),
           viewPadding: EdgeInsets.only(bottom: viewPadding),
-          viewInsets: EdgeInsets.only(bottom: keyboardHeight)
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
         ),
         floatingActionButton,
         bottomNavigationBar: true,
@@ -882,7 +883,7 @@ void main() {
         location,
         const MediaQueryData(
           viewPadding: EdgeInsets.only(bottom: viewPadding),
-          viewInsets: EdgeInsets.only(bottom: keyboardHeight)
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
         ),
         floatingActionButton,
         bottomSheet: true,
@@ -913,7 +914,7 @@ void main() {
         location,
         const MediaQueryData(
           viewPadding: EdgeInsets.only(bottom: viewPadding),
-          viewInsets: EdgeInsets.only(bottom: keyboardHeight)
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
         ),
         floatingActionButton,
         mini: mini,
@@ -1160,7 +1161,7 @@ void main() {
         const MediaQueryData(
           padding: EdgeInsets.only(bottom: viewPadding),
           viewPadding: EdgeInsets.only(bottom: viewPadding),
-          viewInsets: EdgeInsets.only(bottom: keyboardHeight)
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
         ),
         floatingActionButton,
         bottomNavigationBar: true,
@@ -1221,7 +1222,7 @@ void main() {
         const MediaQueryData(
           padding: EdgeInsets.only(bottom: viewPadding),
           viewPadding: EdgeInsets.only(bottom: viewPadding),
-          viewInsets: EdgeInsets.only(bottom: keyboardHeight)
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
         ),
         floatingActionButton,
         bottomNavigationBar: true,
@@ -1271,7 +1272,7 @@ void main() {
         location,
         const MediaQueryData(
           viewPadding: EdgeInsets.only(bottom: viewPadding),
-          viewInsets: EdgeInsets.only(bottom: keyboardHeight)
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
         ),
         floatingActionButton,
         mini: mini,
@@ -1524,7 +1525,7 @@ class _GeometryListenerState extends State<_GeometryListener> {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: cache
+      painter: cache,
     );
   }
 
@@ -1640,18 +1641,19 @@ Widget buildFrame({
       DefaultMaterialLocalizations.delegate,
     ],
     child: Directionality(
-    textDirection: textDirection,
-    child: MediaQuery(
-      data: MediaQueryData(viewInsets: viewInsets),
-      child: Scaffold(
-        appBar: AppBar(title: const Text('FabLocation Test')),
-        floatingActionButtonLocation: location,
-        floatingActionButton: fab,
-        bottomNavigationBar: bab,
-        body: listener,
+      textDirection: textDirection,
+      child: MediaQuery(
+        data: MediaQueryData(viewInsets: viewInsets),
+        child: Scaffold(
+          appBar: AppBar(title: const Text('FabLocation Test')),
+          floatingActionButtonLocation: location,
+          floatingActionButton: fab,
+          bottomNavigationBar: bab,
+          body: listener,
+        ),
       ),
     ),
-  ));
+  );
 }
 
 class _StartTopFloatingActionButtonLocation extends FloatingActionButtonLocation {

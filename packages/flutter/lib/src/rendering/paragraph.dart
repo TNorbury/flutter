@@ -16,24 +16,6 @@ import 'box.dart';
 import 'debug.dart';
 import 'object.dart';
 
-/// How overflowing text should be handled.
-///
-/// A [TextOverflow] can be passed to [Text] and [RichText] via their
-/// [Text.overflow] and [RichText.overflow] properties respectively.
-enum TextOverflow {
-  /// Clip the overflowing text to fix its container.
-  clip,
-
-  /// Fade the overflowing text to transparent.
-  fade,
-
-  /// Use an ellipsis to indicate that the text has overflowed.
-  ellipsis,
-
-  /// Render overflowing text outside of its container.
-  visible,
-}
-
 const String _kEllipsis = '\u2026';
 
 /// Parent data for use with [RenderParagraph].
@@ -123,7 +105,7 @@ class RenderParagraph extends RenderBox
          locale: locale,
          strutStyle: strutStyle,
          textWidthBasis: textWidthBasis,
-         textHeightBehavior: textHeightBehavior
+         textHeightBehavior: textHeightBehavior,
        ) {
     addAll(children);
     _extractPlaceholderSpans(text);
@@ -373,9 +355,11 @@ class RenderParagraph extends RenderBox
         case ui.PlaceholderAlignment.baseline:
         case ui.PlaceholderAlignment.aboveBaseline:
         case ui.PlaceholderAlignment.belowBaseline: {
-          assert(RenderObject.debugCheckingIntrinsics,
+          assert(
+            RenderObject.debugCheckingIntrinsics,
             'Intrinsics are not available for PlaceholderAlignment.baseline, '
-            'PlaceholderAlignment.aboveBaseline, or PlaceholderAlignment.belowBaseline.');
+            'PlaceholderAlignment.aboveBaseline, or PlaceholderAlignment.belowBaseline.',
+          );
           return false;
         }
         case ui.PlaceholderAlignment.top:
@@ -563,7 +547,7 @@ class RenderParagraph extends RenderBox
         switch (_placeholderSpans[childIndex].alignment) {
           case ui.PlaceholderAlignment.baseline: {
             baselineOffset = child.getDistanceToBaseline(
-              _placeholderSpans[childIndex].baseline!
+              _placeholderSpans[childIndex].baseline!,
             );
             break;
           }
@@ -1005,7 +989,7 @@ class RenderParagraph extends RenderBox
       text.toDiagnosticsNode(
         name: 'text',
         style: DiagnosticsTreeStyle.transition,
-      )
+      ),
     ];
   }
 
@@ -1021,7 +1005,7 @@ class RenderParagraph extends RenderBox
         ifTrue: 'wrapping at box width',
         ifFalse: 'no wrapping except at line break characters',
         showName: true,
-      )
+      ),
     );
     properties.add(EnumProperty<TextOverflow>('overflow', overflow));
     properties.add(
@@ -1029,14 +1013,14 @@ class RenderParagraph extends RenderBox
         'textScaleFactor',
         textScaleFactor,
         defaultValue: 1.0,
-      )
+      ),
     );
     properties.add(
       DiagnosticsProperty<Locale>(
         'locale',
         locale,
         defaultValue: null,
-      )
+      ),
     );
     properties.add(IntProperty('maxLines', maxLines, ifNull: 'unlimited'));
   }

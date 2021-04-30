@@ -5,8 +5,8 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
@@ -89,8 +89,7 @@ class TestAnnotationTarget with Diagnosticable implements MouseTrackerAnnotation
   @override
   void handleEvent(PointerEvent event, HitTestEntry entry) {
     if (event is PointerHoverEvent)
-      if (onHover != null)
-        onHover!(event);
+      onHover?.call(event);
   }
 }
 

@@ -290,7 +290,10 @@ mixin WidgetsBinding on BindingBase, ServicesBinding, SchedulerBinding, GestureB
     window.onLocaleChanged = handleLocaleChanged;
     window.onAccessibilityFeaturesChanged = handleAccessibilityFeaturesChanged;
     SystemChannels.navigation.setMethodCallHandler(_handleNavigationInvocation);
-    FlutterErrorDetails.propertiesTransformers.add(transformDebugCreator);
+    assert(() {
+      FlutterErrorDetails.propertiesTransformers.add(debugTransformDebugCreator);
+      return true;
+    }());
   }
 
   void _debugAddStackFilters() {
@@ -666,7 +669,7 @@ mixin WidgetsBinding on BindingBase, ServicesBinding, SchedulerBinding, GestureB
           RouteInformation(
             location: routeArguments['location'] as String,
             state: routeArguments['state'] as Object?,
-          )
+          ),
         )
       )
       return;
@@ -746,7 +749,7 @@ mixin WidgetsBinding on BindingBase, ServicesBinding, SchedulerBinding, GestureB
           ErrorSummary('Build scheduled during frame.'),
           ErrorDescription(
             'While the widget tree was being built, laid out, and painted, '
-            'a new frame was scheduled to rebuild the widget tree.'
+            'a new frame was scheduled to rebuild the widget tree.',
           ),
           ErrorHint(
             'This might be because setState() was called from a layout or '
@@ -761,7 +764,7 @@ mixin WidgetsBinding on BindingBase, ServicesBinding, SchedulerBinding, GestureB
             'animation, consider scheduling the frame in a post-frame callback '
             'using SchedulerBinding.addPostFrameCallback or '
             'using an AnimationController to trigger the animation.',
-          )
+          ),
         ]);
       }
       return true;
@@ -1184,6 +1187,7 @@ class RenderObjectToWidgetElement<T extends RenderObject> extends RootRenderObje
     assert(_newWidget == null);
   }
 
+  @pragma('vm:notify-debugger-on-exception')
   void _rebuild() {
     try {
       _child = updateChild(_child, widget.child, _rootChildSlot);

@@ -10,7 +10,6 @@ import 'package:meta/meta.dart';
 import 'package:process/process.dart';
 import 'package:vm_service/vm_service.dart' as vm_service;
 
-import '../application_package.dart';
 import '../base/common.dart';
 import '../base/file_system.dart';
 import '../base/io.dart';
@@ -21,12 +20,13 @@ import '../base/utils.dart';
 import '../build_info.dart';
 import '../convert.dart';
 import '../device.dart';
-import '../device_port_forwader.dart';
-import '../globals.dart' as globals;
-import '../macos/xcode.dart';
+import '../device_port_forwarder.dart';
+import '../globals_null_migrated.dart' as globals;
+import '../macos/xcdevice.dart';
 import '../project.dart';
 import '../protocol_discovery.dart';
 import '../vmservice.dart';
+import 'application_package.dart';
 import 'ios_deploy.dart';
 import 'ios_workflow.dart';
 import 'iproxy.dart';
@@ -312,6 +312,7 @@ class IOSDevice extends Device {
     bool prebuiltApplication = false,
     bool ipv6 = false,
     String userIdentifier,
+    @visibleForTesting Duration discoveryTimeout,
   }) async {
     String packageId;
 
@@ -426,13 +427,12 @@ class IOSDevice extends Device {
         return LaunchResult.succeeded();
       }
 
-      _logger.printTrace('Application launched on the device. Waiting for observatory port.');
-      Uri localUri;
-      try {
-        localUri = await observatoryDiscovery.uri.timeout(const Duration(seconds: 30));
-      } on TimeoutException {
-        await observatoryDiscovery.cancel();
-      }
+      _logger.printTrace('Application launched on the device. Waiting for observatory url.');
+      final Timer timer = Timer(discoveryTimeout ?? const Duration(seconds: 30), () {
+        _logger.printError('iOS Observatory not discovered after 30 seconds. This is taking much longer than expected...');
+      });
+      final Uri localUri = await observatoryDiscovery.uri;
+      timer.cancel();
       if (localUri == null) {
         iosDeployDebugger?.detach();
         return LaunchResult.failed();

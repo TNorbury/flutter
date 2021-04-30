@@ -147,9 +147,15 @@ class DriveCommand extends RunCommandBase {
   }
 
   // `pub` must always be run due to the test script running from source,
-  // even if an application binary is used.
+  // even if an application binary is used. Default to true unless the user explicitly
+  // specified not to.
   @override
-  bool get shouldRunPub => true;
+  bool get shouldRunPub {
+    if (argResults.wasParsed('pub') && !boolArg('pub')) {
+      return false;
+    }
+    return true;
+  }
 
   FlutterDriverFactory _flutterDriverFactory;
   final FileSystem _fileSystem;
@@ -208,7 +214,7 @@ class DriveCommand extends RunCommandBase {
       applicationPackageFactory: ApplicationPackageFactory.instance,
       logger: _logger,
       processUtils: globals.processUtils,
-      dartSdkPath: globals.artifacts.getArtifactPath(Artifact.engineDartBinary),
+      dartSdkPath: globals.artifacts.getHostArtifact(HostArtifact.engineDartBinary).path,
     );
     final PackageConfig packageConfig = await loadPackageConfigWithLogging(
       _fileSystem.file('.packages'),

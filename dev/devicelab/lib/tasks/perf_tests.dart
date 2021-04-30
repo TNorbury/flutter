@@ -7,14 +7,20 @@ import 'dart:convert' show LineSplitter, json, utf8;
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
-
 import 'package:flutter_devicelab/framework/adb.dart';
 import 'package:flutter_devicelab/framework/framework.dart';
 import 'package:flutter_devicelab/framework/host_agent.dart';
 import 'package:flutter_devicelab/framework/task_result.dart';
 import 'package:flutter_devicelab/framework/utils.dart';
+import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
+
+/// Must match flutter_driver/lib/src/common.dart.
+///
+/// Redefined here to avoid taking a dependency on flutter_driver.
+String _testOutputDirectory(String testDirectory) {
+  return Platform.environment['FLUTTER_TEST_OUTPUTS_DIR'] ?? '$testDirectory/build';
+}
 
 TaskFunction createComplexLayoutScrollPerfTest({bool measureCpuGpu = true}) {
   return PerfTest(
@@ -140,6 +146,17 @@ TaskFunction createBackdropFilterPerfTest({bool measureCpuGpu = true}) {
     'backdrop_filter_perf',
     measureCpuGpu: measureCpuGpu,
     testDriver: 'test_driver/backdrop_filter_perf_test.dart',
+    saveTraceFile: true,
+  ).run;
+}
+
+TaskFunction createAnimationWithMicrotasksPerfTest({bool measureCpuGpu = true}) {
+  return PerfTest(
+    '${flutterDirectory.path}/dev/benchmarks/macrobenchmarks',
+    'test_driver/run_app.dart',
+    'animation_with_microtasks_perf',
+    measureCpuGpu: measureCpuGpu,
+    testDriver: 'test_driver/animation_with_microtasks_perf_test.dart',
     saveTraceFile: true,
   ).run;
 }
@@ -297,7 +314,7 @@ TaskFunction createStackSizeTest() {
         hostAgent.dumpDirectory.path,
       ]);
       final Map<String, dynamic> data = json.decode(
-        file('$testDirectory/build/stack_size.json').readAsStringSync(),
+        file('${_testOutputDirectory(testDirectory)}/stack_size.json').readAsStringSync(),
       ) as Map<String, dynamic>;
 
       final Map<String, dynamic> result = <String, dynamic>{
@@ -394,7 +411,7 @@ TaskFunction createsScrollSmoothnessPerfTest() {
         hostAgent.dumpDirectory.path,
       ]);
       final Map<String, dynamic> data = json.decode(
-        file('$testDirectory/build/scroll_smoothness_test.json').readAsStringSync(),
+        file('${_testOutputDirectory(testDirectory)}/scroll_smoothness_test.json').readAsStringSync(),
       ) as Map<String, dynamic>;
 
       final Map<String, dynamic> result = <String, dynamic>{};
@@ -445,7 +462,7 @@ TaskFunction createFramePolicyIntegrationTest() {
         hostAgent.dumpDirectory.path,
       ]);
       final Map<String, dynamic> data = json.decode(
-        file('$testDirectory/build/frame_policy_event_delay.json').readAsStringSync(),
+        file('${_testOutputDirectory(testDirectory)}/frame_policy_event_delay.json').readAsStringSync(),
       ) as Map<String, dynamic>;
       final Map<String, dynamic> fullLiveData = data['fullyLive'] as Map<String, dynamic>;
       final Map<String, dynamic> benchmarkLiveData = data['benchmarkLive'] as Map<String, dynamic>;
@@ -557,11 +574,21 @@ class StartupTest {
          ], canFail: true);
         if (result == 0) {
           final Map<String, dynamic> data = json.decode(
-            file('$testDirectory/build/start_up_info.json').readAsStringSync(),
+            file('${_testOutputDirectory(testDirectory)}/start_up_info.json').readAsStringSync(),
           ) as Map<String, dynamic>;
           results.add(data);
         } else {
           currentFailures += 1;
+          await flutter(
+            'screenshot',
+            options: <String>[
+              '-d',
+              device.deviceId,
+              '--out',
+              hostAgent.dumpDirectory.childFile('screenshot_startup_failure_$currentFailures.png').path,
+            ],
+            canFail: true,
+          );
           i -= 1;
           if (currentFailures == maxFailures) {
             return TaskResult.failure('Application failed to start $maxFailures times');
@@ -700,7 +727,7 @@ class PerfTest {
         hostAgent.dumpDirectory.path,
       ]);
       final Map<String, dynamic> data = json.decode(
-        file('$testDirectory/build/$resultFilename.json').readAsStringSync(),
+        file('${_testOutputDirectory(testDirectory)}/$resultFilename.json').readAsStringSync(),
       ) as Map<String, dynamic>;
 
       if (data['frame_count'] as int < 5) {
@@ -717,7 +744,7 @@ class PerfTest {
         data,
         detailFiles: <String>[
           if (saveTraceFile)
-            '$testDirectory/build/$traceFilename.json',
+            '${_testOutputDirectory(testDirectory)}/$traceFilename.json',
         ],
         benchmarkScoreKeys: benchmarkScoreKeys ?? <String>[
           ..._kCommonScoreKeys,
@@ -796,7 +823,7 @@ class PerfTestWithSkSL extends PerfTest {
       await _generateSkSL();
 
       // Build the app with SkSL artifacts and run that app
-      final String observatoryUri = await _buildAndRun();
+      final String observatoryUri = await _runApp(skslPath: _skslJsonFileName);
 
       // Attach to the running app and run the final driver test to get metrics.
       final TaskResult result = await internalRun(
@@ -832,7 +859,7 @@ class PerfTestWithSkSL extends PerfTest {
     );
   }
 
-  Future<String> _runApp({String appBinary, bool cacheSkSL = false}) async {
+  Future<String> _runApp({String appBinary, bool cacheSkSL = false, String skslPath}) async {
     if (File(_vmserviceFileName).existsSync()) {
       File(_vmserviceFileName).deleteSync();
     }
@@ -850,6 +877,7 @@ class PerfTestWithSkSL extends PerfTest {
         '--purge-persistent-cache',
         '--no-publish-port',
         '--profile',
+        if (skslPath != null) '--bundle-sksl-path=$skslPath',
         if (cacheSkSL) '--cache-sksl',
         '-d', _device.deviceId,
         '-t', testTarget,
@@ -865,18 +893,6 @@ class PerfTestWithSkSL extends PerfTest {
 
     final File file = await waitForFile(_vmserviceFileName);
     return file.readAsStringSync();
-  }
-
-  // Return the VMService URI.
-  Future<String> _buildAndRun() async {
-    await flutter('build', options: <String>[
-      if (_isAndroid) 'apk' else 'ios',
-      '--profile',
-      '--bundle-sksl-path', _skslJsonFileName,
-      '-t', testTarget,
-    ]);
-
-    return _runApp(appBinary: _appBinary);
   }
 
   String get _skslJsonFileName => '$testDirectory/flutter_01.sksl.json';
@@ -1170,7 +1186,7 @@ class CompileTest {
 
     final _UnzipListEntry libflutter = fileToMetadata['lib/armeabi-v7a/libflutter.so'];
     final _UnzipListEntry libapp = fileToMetadata['lib/armeabi-v7a/libapp.so'];
-    final _UnzipListEntry license = fileToMetadata['assets/flutter_assets/NOTICES'];
+    final _UnzipListEntry license = fileToMetadata['assets/flutter_assets/NOTICES.Z'];
 
     return <String, dynamic>{
       'libflutter_uncompressed_bytes': libflutter.uncompressedSize,
@@ -1429,7 +1445,7 @@ class DevToolsMemoryTest {
       'global',
       'activate',
       'devtools',
-      '2.0.0',
+      '2.1.1',
     ]);
     _devToolsProcess = await startProcess(
       pubBin,

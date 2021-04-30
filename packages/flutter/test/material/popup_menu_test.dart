@@ -5,10 +5,10 @@
 import 'dart:ui' show window, SemanticsFlag;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../widgets/semantics_tester.dart';
 import 'feedback_tester.dart';
@@ -1683,7 +1683,7 @@ void main() {
     );
 
     expect(find.byType(Tooltip), findsNWidgets(3));
-    expect(find.byTooltip('Test tooltip',), findsNWidgets(3));
+    expect(find.byTooltip('Test tooltip'), findsNWidgets(3));
   });
 
   testWidgets('Allow Widget for PopupMenuButton.icon', (WidgetTester tester) async {
@@ -1790,25 +1790,25 @@ void main() {
     final GlobalKey<PopupMenuButtonState<int>> globalKey = GlobalKey();
 
     await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: Column(
-              children: <Widget>[
-                PopupMenuButton<int>(
-                  key: globalKey,
-                  itemBuilder: (BuildContext context) {
-                    return <PopupMenuEntry<int>>[
-                      const PopupMenuItem<int>(
-                        value: 1,
-                        child: Text('Tap me please!'),
-                      ),
-                    ];
-                  },
-                ),
-              ],
-            ),
+      MaterialApp(
+        home: Material(
+          child: Column(
+            children: <Widget>[
+              PopupMenuButton<int>(
+                key: globalKey,
+                itemBuilder: (BuildContext context) {
+                  return <PopupMenuEntry<int>>[
+                    const PopupMenuItem<int>(
+                      value: 1,
+                      child: Text('Tap me please!'),
+                    ),
+                  ];
+                },
+              ),
+            ],
           ),
-        )
+        ),
+      ),
     );
 
     expect(find.text('Tap me please!'), findsNothing);
@@ -1963,8 +1963,6 @@ void main() {
   testWidgets('Vertically long PopupMenu does not overlap with the status bar and bottom notch', (WidgetTester tester) async {
     const double windowPaddingTop = 44;
     const double windowPaddingBottom = 34;
-    final GlobalKey _firstKey = GlobalKey();
-    final GlobalKey _lastKey = GlobalKey();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -1987,8 +1985,6 @@ void main() {
             child: const Text('Show Menu'),
             itemBuilder: (BuildContext context) => Iterable<PopupMenuItem<int>>.generate(
               20, (int i) => PopupMenuItem<int>(
-                // Set globalKey to the first and last item.
-                key: i == 0 ? _firstKey : i == 19 ? _lastKey : null,
                 value: i,
                 child: Text('Item $i'),
               ),
@@ -2001,17 +1997,65 @@ void main() {
     await tester.tap(find.text('Show Menu'));
     await tester.pumpAndSettle();
 
-    // Check whether the first item is not overlapping with status bar.
-    expect(tester.getTopLeft(find.byKey(_firstKey)).dy, greaterThan(windowPaddingTop));
+    final Offset topRightOfMenu = tester.getTopRight(find.byType(SingleChildScrollView));
+    final Offset bottomRightOfMenu = tester.getBottomRight(find.byType(SingleChildScrollView));
 
-    await tester.ensureVisible(find.byKey(_lastKey, skipOffstage: false));
+    expect(topRightOfMenu.dy, windowPaddingTop + 8.0);
+    expect(bottomRightOfMenu.dy, 600.0 - windowPaddingBottom - 8.0); // Screen height is 600.
+  });
+
+  testWidgets('PopupMenu position test when have unsafe area', (WidgetTester tester) async {
+    final GlobalKey buttonKey = GlobalKey();
+
+    Widget buildFrame(double width, double height) {
+      return MaterialApp(
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: const MediaQueryData(
+              padding: EdgeInsets.only(
+                top: 32.0,
+                bottom: 32.0,
+              ),
+            ),
+            child: child!,
+          );
+        },
+        home: Scaffold(
+          appBar: AppBar(
+            title: const Text('PopupMenu Test'),
+            actions: <Widget>[PopupMenuButton<int>(
+              child: SizedBox(
+                key: buttonKey,
+                height: height,
+                width: width,
+                child: const ColoredBox(
+                  color: Colors.pink,
+                ),
+              ),
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
+                const PopupMenuItem<int>(child: Text('-1-'), value: 1),
+                const PopupMenuItem<int>(child: Text('-2-'), value: 2),
+              ],
+            )],
+          ),
+          body: Container(),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildFrame(20.0, 20.0));
+
+    await tester.tap(find.byKey(buttonKey));
     await tester.pumpAndSettle();
 
-    // Check whether the last item is not overlapping with bottom notch.
-    expect(
-      tester.getBottomLeft(find.byKey(_lastKey)).dy,
-      lessThan(600 - windowPaddingBottom), // Device height is 600.
-    );
+    final Offset button = tester.getTopRight(find.byKey(buttonKey));
+    expect(button, const Offset(800.0, 32.0)); // The topPadding is 32.0.
+
+    final Offset popupMenu = tester.getTopRight(find.byType(SingleChildScrollView));
+
+    // The menu should be positioned directly next to the top of the button.
+    // The 8.0 pixels is [_kMenuScreenPadding].
+    expect(popupMenu, Offset(button.dx - 8.0, button.dy + 8.0));
   });
 
   group('feedback', () {
@@ -2164,6 +2208,71 @@ void main() {
     await tester.tap(find.text('press'));
     await tester.pumpAndSettle();
     expect(find.text('foo'), findsOneWidget);
+  });
+
+  // Regression test for https://github.com/flutter/flutter/issues/80869
+  testWidgets('The menu position test in the scrollable widget', (WidgetTester tester) async {
+    final GlobalKey buttonKey = GlobalKey();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 100),
+                PopupMenuButton<int>(
+                  child: SizedBox(
+                    key: buttonKey,
+                    height: 10.0,
+                    width: 10.0,
+                    child: const ColoredBox(
+                      color: Colors.pink,
+                    ),
+                  ),
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
+                    const PopupMenuItem<int>(child: Text('-1-'), value: 1),
+                    const PopupMenuItem<int>(child: Text('-2-'), value: 2),
+                  ],
+                ),
+                const SizedBox(height: 600),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Open the menu.
+    await tester.tap(find.byKey(buttonKey));
+    await tester.pumpAndSettle();
+
+    Offset button = tester.getTopLeft(find.byKey(buttonKey));
+    expect(button, const Offset(0.0, 100.0));
+
+    Offset popupMenu = tester.getTopLeft(find.byType(SingleChildScrollView).last);
+    // The menu should be positioned directly next to the top of the button.
+    // The 8.0 pixels is [_kMenuScreenPadding].
+    expect(popupMenu, const Offset(8.0, 100.0));
+
+    // Close the menu.
+    await tester.tap(find.byKey(buttonKey), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    // Scroll a little bit.
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0.0, -50.0));
+
+    button = tester.getTopLeft(find.byKey(buttonKey));
+    expect(button, const Offset(0.0, 50.0));
+
+    // Open the menu again.
+    await tester.tap(find.byKey(buttonKey));
+    await tester.pumpAndSettle();
+
+    popupMenu = tester.getTopLeft(find.byType(SingleChildScrollView).last);
+    // The menu should be positioned directly next to the top of the button.
+    // The 8.0 pixels is [_kMenuScreenPadding].
+    expect(popupMenu, const Offset(8.0, 50.0));
   });
 }
 

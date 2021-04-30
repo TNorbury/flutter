@@ -736,7 +736,7 @@ void main() {
   });
 
   testWidgets('Image.memory control test', (WidgetTester tester) async {
-    await tester.pumpWidget(Image.memory(Uint8List.fromList(kTransparentImage), excludeFromSemantics: true,));
+    await tester.pumpWidget(Image.memory(Uint8List.fromList(kTransparentImage), excludeFromSemantics: true));
   });
 
   testWidgets('Image color and colorBlend parameters', (WidgetTester tester) async {
@@ -761,8 +761,8 @@ void main() {
         builder: (BuildContext context) {
           precache = precacheImage(provider, context);
           return Container();
-        }
-      )
+        },
+      ),
     );
     provider.complete(image10x10);
     await precache;
@@ -784,8 +784,8 @@ void main() {
         builder: (BuildContext context) {
           precacheImage(provider, context);
           return Container();
-        }
-      )
+        },
+      ),
     );
 
     // Two listeners - one is the listener added by precacheImage, the other by the ImageCache.
@@ -819,8 +819,8 @@ void main() {
         builder: (BuildContext context) {
           precache = precacheImage(imageProvider, context, onError: errorListener);
           return Container();
-        }
-      )
+        },
+      ),
     );
     imageProvider.fail(testException, testStack);
     await precache;
@@ -967,7 +967,7 @@ void main() {
     );
 
     expect(semantics, hasSemantics(TestSemantics.root(
-      children: <TestSemantics>[]
+      children: <TestSemantics>[],
     )));
     semantics.dispose();
   });
@@ -1506,8 +1506,8 @@ void main() {
         builder: (BuildContext context) {
           precache = precacheImage(provider, context);
           return Container();
-        }
-      )
+        },
+      ),
     );
     provider.complete(image10x10);
     await precache;
@@ -1556,8 +1556,8 @@ void main() {
         builder: (BuildContext context) {
           precache = precacheImage(provider, context);
           return Container();
-        }
-      )
+        },
+      ),
     );
     provider.complete(image10x10);
     await precache;
@@ -2026,9 +2026,7 @@ class _TestImageStreamCompleter extends ImageStreamCompleter {
   }) {
     final List<ImageStreamListener> localListeners = listeners.toList();
     for (final ImageStreamListener listener in localListeners) {
-      if (listener.onError != null) {
-        listener.onError!(exception, stackTrace);
-      }
+      listener.onError?.call(exception, stackTrace);
     }
   }
 }

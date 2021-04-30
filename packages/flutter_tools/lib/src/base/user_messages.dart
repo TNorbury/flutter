@@ -5,7 +5,7 @@
 import 'context.dart';
 import 'platform.dart';
 
-UserMessages get userMessages => context.get<UserMessages>();
+UserMessages get userMessages => context.get<UserMessages>()!;
 
 /// Class containing message strings that can be produced by Flutter tools.
 class UserMessages {
@@ -20,6 +20,8 @@ class UserMessages {
       'Flutter version $version at $flutterRoot';
   String flutterRevision(String revision, String age, String date) =>
       'Framework revision $revision ($age), $date';
+  String flutterUpstreamRepositoryUrl(String url) => 'Upstream repository $url';
+  String flutterGitUrl(String url) => 'FLUTTER_GIT_URL = $url';
   String engineRevision(String revision) => 'Engine revision $revision';
   String dartRevision(String revision) => 'Dart version $revision';
   String pubMirrorURL(String url) => 'Pub download mirror $url';

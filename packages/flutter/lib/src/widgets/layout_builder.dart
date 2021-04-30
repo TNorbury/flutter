@@ -115,6 +115,10 @@ class _LayoutBuilderElement<ConstraintType extends Constraints> extends RenderOb
   }
 
   void _layout(ConstraintType constraints) {
+    // TODO(goderbauer): When https://github.com/dart-lang/sdk/issues/45710 is
+    //   fixed: refactor the anonymous closure below into a named one, apply the
+    //   @pragma('vm:notify-debugger-on-exception') to it and enable the
+    //   corresponding test in break_on_framework_exceptions_test.dart.
     owner!.buildScope(this, () {
       Widget built;
       try {
@@ -390,7 +394,7 @@ class _RenderLayoutBuilder extends RenderBox with RenderObjectWithChildMixin<Ren
         throw FlutterError(
           'LayoutBuilder does not support returning intrinsic dimensions.\n'
           'Calculating the intrinsic dimensions would require running the layout '
-          'callback speculatively, which might mutate the live render object tree.'
+          'callback speculatively, which might mutate the live render object tree.',
         );
       }
       return true;

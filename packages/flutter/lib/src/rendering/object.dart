@@ -1359,11 +1359,18 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
 
   /// Whether tree mutations are currently permitted.
   ///
-  /// Only valid when asserts are enabled. In release builds, always returns
-  /// null.
+  /// This is only useful during layout. One should also not mutate the tree at
+  /// other times (e.g. during paint or while assembling the semantic tree) but
+  /// this function does not currently enforce those conventions.
+  ///
+  /// Only valid when asserts are enabled. This will throw in release builds.
   bool get _debugCanPerformMutations {
     late bool result;
     assert(() {
+      if (owner != null && !owner!.debugDoingLayout) {
+        result = true;
+        return true;
+      }
       RenderObject node = this;
       while (true) {
         if (node._doingThisLayoutWithCallback) {
@@ -1617,6 +1624,7 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
     owner!._nodesNeedingLayout.add(this);
   }
 
+  @pragma('vm:notify-debugger-on-exception')
   void _layoutWithoutResize() {
     assert(_relayoutBoundary == this);
     RenderObject? debugPreviousActiveLayout;
@@ -1671,6 +1679,7 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
   /// children unconditionally. It is the [layout] method's responsibility (as
   /// implemented here) to return early if the child does not need to do any
   /// work to update its layout information.
+  @pragma('vm:notify-debugger-on-exception')
   void layout(Constraints constraints, { bool parentUsesSize = false }) {
     if (!kReleaseMode && debugProfileLayoutsEnabled)
       Timeline.startSync('$runtimeType',  arguments: timelineArgumentsIndicatingLandmarkEvent);
@@ -1697,7 +1706,7 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
             "These invalid constraints were provided to $runtimeType's layout() "
             'function by the following function, which probably computed the '
             'invalid constraints in question:\n'
-            '  $problemFunction'
+            '  $problemFunction',
           );
         }
       },
@@ -2231,11 +2240,11 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
           ErrorSummary('Tried to paint a RenderObject reentrantly.'),
           describeForError(
             'The following RenderObject was already being painted when it was '
-            'painted again'
+            'painted again',
           ),
           ErrorDescription(
             'Since this typically indicates an infinite recursion, it is '
-            'disallowed.'
+            'disallowed.',
           ),
         ]);
       }
@@ -2270,15 +2279,15 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
                 'The parent was',
               ),
               describeForError(
-                'The child that was not visited was'
+                'The child that was not visited was',
               ),
               ErrorDescription(
                 'A RenderObject with children must implement visitChildren and '
                 'call the visitor exactly once for each child; it also should not '
-                'paint children that were removed with dropChild.'
+                'paint children that were removed with dropChild.',
               ),
               ErrorHint(
-                'This usually indicates an error in the Flutter framework itself.'
+                'This usually indicates an error in the Flutter framework itself.',
               ),
             ]);
           }
@@ -2286,7 +2295,7 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
             'Tried to paint a RenderObject before its compositing bits were '
-            'updated.'
+            'updated.',
           ),
           describeForError(
             'The following RenderObject was marked as having dirty compositing '
@@ -2295,10 +2304,10 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
           ErrorDescription(
             'A RenderObject that still has dirty compositing bits cannot be '
             'painted because this indicates that the tree has not yet been '
-            'properly configured for creating the layer tree.'
+            'properly configured for creating the layer tree.',
           ),
           ErrorHint(
-            'This usually indicates an error in the Flutter framework itself.'
+            'This usually indicates an error in the Flutter framework itself.',
           ),
         ]);
       }
@@ -2983,7 +2992,7 @@ mixin RenderObjectWithChildMixin<ChildType extends RenderObject> on RenderObject
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
             'A $runtimeType expected a child of type $ChildType but received a '
-            'child of type ${child.runtimeType}.'
+            'child of type ${child.runtimeType}.',
           ),
           ErrorDescription(
             'RenderObjects expect specific types of children because they '
@@ -3129,13 +3138,13 @@ mixin ContainerRenderObjectMixin<ChildType extends RenderObject, ParentDataType 
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
             'A $runtimeType expected a child of type $ChildType but received a '
-            'child of type ${child.runtimeType}.'
+            'child of type ${child.runtimeType}.',
           ),
           ErrorDescription(
             'RenderObjects expect specific types of children because they '
             'coordinate with their children during layout and paint. For '
             'example, a RenderSliver cannot be the child of a RenderBox because '
-            'a RenderSliver does not understand the RenderBox layout protocol.'
+            'a RenderSliver does not understand the RenderBox layout protocol.',
           ),
           ErrorSpacer(),
           DiagnosticsProperty<Object?>(

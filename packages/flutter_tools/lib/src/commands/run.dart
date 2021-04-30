@@ -36,10 +36,14 @@ abstract class RunCommandBase extends FlutterCommand with DeviceBasedDevelopment
     usesFlavorOption();
     usesWebRendererOption();
     addNativeNullAssertions(hide: !verboseHelp);
+    addBundleSkSLPathOption(hide: !verboseHelp);
     argParser
       ..addFlag('trace-startup',
         negatable: false,
-        help: 'Trace application startup, then exit, saving the trace to a file.',
+        help: 'Trace application startup, then exit, saving the trace to a file. '
+              'By default, this will be saved in the "build" directory. If the '
+              'FLUTTER_TEST_OUTPUTS_DIR environment variable is set, the file '
+              'will be written there instead.',
       )
       ..addFlag('verbose-system-logs',
         negatable: false,
@@ -187,7 +191,7 @@ abstract class RunCommandBase extends FlutterCommand with DeviceBasedDevelopment
         buildInfo,
         startPaused: boolArg('start-paused'),
         disableServiceAuthCodes: boolArg('disable-service-auth-codes'),
-        disableDds: boolArg('disable-dds'),
+        enableDds: enableDds,
         dartEntrypointArgs: stringsArg('dart-entrypoint-args'),
         dartFlags: stringArg('dart-flags') ?? '',
         useTestFonts: argParser.options.containsKey('use-test-fonts') && boolArg('use-test-fonts'),
