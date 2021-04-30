@@ -512,7 +512,7 @@ void main() {
     } finally {
       tryToDelete(fileSystem.directory(tempDirectory));
     }
-  }, skip: 'DevTools does not reliably launch on bots currently.'); // TODO(ianh): fix and re-enable test.
+  }); // TODO(ianh): fix and re-enable test.
 
   testWithoutContext('flutter run help output', () async {
     // This test enables all logging so that it checks the exact text of starting up an application.

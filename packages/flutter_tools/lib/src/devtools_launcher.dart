@@ -56,20 +56,16 @@ class DevtoolsServerLauncher extends DevtoolsLauncher {
       bool offline = false;
       bool useOverrideUrl = false;
       try {
-        Uri uri;
-        if (_platform.environment.containsKey(_pubHostedUrlKey)) {
-          useOverrideUrl = true;
-          uri = Uri.parse(_platform.environment[_pubHostedUrlKey]);
-        } else {
-          uri = Uri.https('pub.dev', '');
-        }
+        final Uri uri = Uri.parse('http://pub.dev');
         final io.HttpClientRequest request = await _httpClient.headUrl(uri);
         final io.HttpClientResponse response = await request.close();
         await response.drain<void>();
         if (response.statusCode != io.HttpStatus.ok) {
+          _logger.printError('pub offline: ${response.statusCode}');
           offline = true;
         }
-      } on Exception {
+      } on Exception catch (e, st) {
+        _logger.printError('pub offline: $e', stackTrace: st);
         offline = true;
       } on ArgumentError {
         if (!useOverrideUrl) {
